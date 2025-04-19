@@ -1,0 +1,54 @@
+# Prometheus Operator
+prometheusOperator:
+  enabled: true
+  tls:
+    enabled: true
+
+# Prometheus
+prometheus:
+  enabled: true
+  service:
+    type: LoadBalancer
+  retention: 15d
+  resources:
+    limits:
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      memory: 4Gi
+
+# Alertmanager
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['job']
+      receiver: 'slack-notifications'
+    receivers:
+    - name: 'slack-notifications'
+      slack_configs:
+      - api_url: $SLACK_WEBHOOK_URL
+        channel: '#alerts'
+
+# Grafana
+grafana:
+  enabled: true
+  adminPassword: "$GRAFANA_ADMIN_PWD"
+  persistence:
+    enabled: true
+    size: 10Gi
+  dashboards:
+    default:
+      app-dashboard:
+        gnetId: 1860
+        revision: 1
+        datasource: Prometheus
+
+# Custom scrape configs
+additionalScrapeConfigs:
+  - job_name: 'my-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['my-app.default.svc.cluster.local:8080']

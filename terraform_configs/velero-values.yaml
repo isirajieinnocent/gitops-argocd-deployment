@@ -1,0 +1,33 @@
+configuration:
+  provider: aws
+  backupStorageLocation:
+    name: aws
+    bucket: ${s3_bucket}
+    config:
+      region: ${region}
+  volumeSnapshotLocation:
+    name: aws
+    config:
+      region: ${region}
+
+serviceAccount:
+  server:
+    create: true
+    name: velero
+    annotations:
+      eks.amazonaws.com/role-arn: ${role_arn}
+
+initContainers:
+- name: velero-plugin-for-aws
+  image: velero/velero-plugin-for-aws:v1.7.0
+  volumeMounts:
+  - mountPath: /target
+    name: plugins
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 256Mi
