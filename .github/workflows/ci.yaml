@@ -1,13 +1,13 @@
+name: CI/CD for Helm + ArgoCD App-of-Apps
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   security-events: write
 
 jobs:
@@ -27,31 +27,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Login to GitHub Container Registry (GHCR)
+      - name: Login to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build and push image
         uses: docker/build-push-action@v4
         with:
           context: ./src/app
           push: true
           tags: |
-            ghcr.io/isirajieinnocent/time-printer:latest
-            ghcr.io/isirajieinnocent/time-printer:${{ github.sha }}
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/time-printer:latest
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/time-printer:${{ github.sha }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
           sbom: true
           provenance: true
-          
+
       - name: Move new cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      update-helm-values:
-      runs-on: ubuntu-latest
-      needs: build
-      steps:
+  update-helm-values:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Clone Helm chart repo
         run: |
           git clone https://github.com/${{ secrets.HELM_REPO }} helm-repo
@@ -67,7 +67,7 @@ jobs:
           git commit -m "Update image tag to ${{ github.sha }}"
           git push
 
-    sync-argocd:
+  sync-argocd:
     runs-on: ubuntu-latest
     needs: update-helm-values
     steps:
@@ -89,7 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Log in to GitHub Container Registry (GHCR)
+      - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - uses: aquasecurity/trivy-action@master
@@ -105,7 +105,7 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
-notify:
+  notify:
     runs-on: ubuntu-latest
     needs: sync-argocd
     steps:
@@ -119,4 +119,4 @@ notify:
             *App:* time-printer
             *Tag:* `${{ github.sha }}`
             *Chart Repo:* `${{ secrets.HELM_REPO }}`
-            *Synced via:* ArgoCD App-of-Apps 
+            *Synced via:* ArgoCD App-of-Apps 🚀
