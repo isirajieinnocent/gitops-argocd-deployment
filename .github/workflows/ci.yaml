@@ -57,7 +57,7 @@ jobs:
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
           git config user.name "GitHub Actions"
-          git config user.email"actions@github.com"
+          git config user.email "actions@github.com"  # Fixed space between user.email and value
 
       - name: Update image tag in values.yaml
         run: |
@@ -119,4 +119,4 @@ jobs:
             *App:* time-printer
             *Tag:* `${{ github.sha }}`
             *Chart Repo:* `${{ secrets.HELM_REPO }}`
-            *Synced via:* ArgoCD App-of-Apps 🚀
+            *Synced via:* ArgoCD App-of-Apps
