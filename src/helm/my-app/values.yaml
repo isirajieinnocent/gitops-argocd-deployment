@@ -1,17 +1,14 @@
 replicaCount: 3
-
 image:
   repository: isirajieinnocent/time-printer
-  tag: latest
+  tag: f8be213a3894c5d68eadb1cd37b7a6ef5b57e966
   pullPolicy: IfNotPresent
-
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
   fsGroup: 2000
   seccompProfile:
     type: RuntimeDefault
-
 autoscaling:
   enabled: true
   minReplicas: 2
