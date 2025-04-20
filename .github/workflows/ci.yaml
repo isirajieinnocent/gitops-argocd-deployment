@@ -53,8 +53,7 @@ jobs:
     needs: build
     steps:
       - name: Clone Helm chart repo
-        run: |
-          git clone https://github.com/${{ secrets.HELM_REPO }} helm-repo- run: git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
+        run: git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
