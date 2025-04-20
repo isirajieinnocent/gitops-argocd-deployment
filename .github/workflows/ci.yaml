@@ -54,7 +54,7 @@ jobs:
     steps:
       - name: Clone Helm repo and configure Git
         run: |
-          git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
           git config user.name "GitHub Actions"
           git config user.email"actions@github.com"
