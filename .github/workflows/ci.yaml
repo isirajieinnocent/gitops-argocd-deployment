@@ -57,13 +57,13 @@ jobs:
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
           git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"  # Fixed space between user.email and value
+          git config user.email "actions@github.com"
 
       - name: Update image tag in values.yaml
         run: |
           cd helm-repo
-          yq e '.image.tag = "${{ github.sha }}"' -i src/helm/my-app/values.yaml
-          git add src/helm/my-app/values.yaml
+          yq e '.image.tag = "${{ github.sha }}"' -i terraform_configs/argocd/helm/my-app/values.yaml
+          git add terraform_configs/argocd/helm/my-app/values.yaml
           git commit -m "Update image tag to ${{ github.sha }}"
           git push
 
@@ -116,7 +116,7 @@ jobs:
           SLACK_COLOR: good
           SLACK_TITLE: "Helm App Deployed"
           SLACK_MESSAGE: |
-            *App:* time-printer
-            *Tag:* `${{ github.sha }}`
-            *Chart Repo:* `${{ secrets.HELM_REPO }}`
+            *App:* time-printer  
+            *Tag:* `${{ github.sha }}`  
+            *Chart Repo:* `${{ secrets.HELM_REPO }}`  
             *Synced via:* ArgoCD App-of-Apps
