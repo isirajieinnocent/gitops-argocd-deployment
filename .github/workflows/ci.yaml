@@ -52,11 +52,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Clone Helm chart repo
-        run: git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
-          cd helm-repo
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+   -name: Clone Helm repo and configure Git
+   run: |
+    git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
+    cd helm-repo
+    git config user.name "GitHub Actions"
+    git config user.email "actions@github.com"
 
       - name: Update image tag in values.yaml
         run: |
