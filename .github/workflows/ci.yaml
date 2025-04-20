@@ -56,8 +56,8 @@ jobs:
         run: |
           git clone https://github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config isirajieinnocent "GitHub Actions"
+          git config isirajieinnocent@gmail.com "actions@github.com"
 
       - name: Update image tag in values.yaml
         run: |
