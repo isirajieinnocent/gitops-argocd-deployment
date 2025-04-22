@@ -12,6 +12,11 @@ spec:
       labels:
         app: release-name
     spec:
+      tolerations:
+        - key: "spot-instance"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
       securityContext:
         fsGroup: 2000
         runAsNonRoot: true
