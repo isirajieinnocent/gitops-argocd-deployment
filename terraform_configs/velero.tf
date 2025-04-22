@@ -1,4 +1,3 @@
-# S3 Bucket for Backups
 resource "random_id" "velero_suffix" {
   byte_length = 4
 }
@@ -30,16 +29,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "velero_backups" {
   }
 }
 
-# IAM Policy for Velero
 resource "aws_iam_policy" "velero" {
   name        = "velero-${var.cluster_name}"
   description = "Permissions for Velero backups"
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "ec2:DescribeVolumes",
           "ec2:DescribeSnapshots",
@@ -47,32 +45,29 @@ resource "aws_iam_policy" "velero" {
           "ec2:CreateVolume",
           "ec2:CreateSnapshot",
           "ec2:DeleteSnapshot"
-        ]
+        ],
         Resource = "*"
       },
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "s3:GetObject",
           "s3:DeleteObject",
           "s3:PutObject",
           "s3:AbortMultipartUpload",
           "s3:ListMultipartUploadParts"
-        ]
+        ],
         Resource = "${aws_s3_bucket.velero_backups.arn}/*"
       },
       {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket"
-        ]
+        Effect = "Allow",
+        Action = ["s3:ListBucket"],
         Resource = aws_s3_bucket.velero_backups.arn
       }
     ]
   })
 }
 
-# IRSA Module
 module "velero_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
   version = "~> 5.0"
@@ -84,14 +79,23 @@ module "velero_irsa" {
   oidc_fully_qualified_subjects = ["system:serviceaccount:velero:velero"]
 }
 
-# Kubernetes Namespace
 resource "kubernetes_namespace" "velero" {
   metadata {
     name = "velero"
   }
 }
 
-# Helm Release (must come last)
+# Only one null_resource for Velero CRDs
+resource "null_resource" "velero_crds" {
+  provisioner "local-exec" {
+    command = "kubectl apply -f https://github.com/vmware-tanzu/velero/releases/download/v1.14.0/crds.yaml"
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
 resource "helm_release" "velero" {
   name       = "velero"
   repository = "https://vmware-tanzu.github.io/helm-charts"
@@ -110,37 +114,42 @@ resource "helm_release" "velero" {
   }
 
   set {
-    name  = "backupStorageLocations[0].name"
+    name  = "initContainers[0].volumeMounts[0].mountPath"
+    value = "/target"
+  }
+
+  set {
+    name  = "initContainers[0].volumeMounts[0].name"
+    value = "plugins"
+  }
+
+  set {
+    name  = "configuration.provider"
     value = "aws"
   }
 
   set {
-    name  = "backupStorageLocations[0].provider"
+    name  = "configuration.backupStorageLocation.name"
     value = "aws"
   }
 
   set {
-    name  = "backupStorageLocations[0].bucket"
+    name  = "configuration.backupStorageLocation.bucket"
     value = aws_s3_bucket.velero_backups.id
   }
 
   set {
-    name  = "backupStorageLocations[0].config.region"
+    name  = "configuration.backupStorageLocation.config.region"
     value = var.region
   }
 
   set {
-    name  = "volumeSnapshotLocations[0].name"
+    name  = "configuration.volumeSnapshotLocation.name"
     value = "aws"
   }
 
   set {
-    name  = "volumeSnapshotLocations[0].provider"
-    value = "aws"
-  }
-
-  set {
-    name  = "volumeSnapshotLocations[0].config.region"
+    name  = "configuration.volumeSnapshotLocation.config.region"
     value = var.region
   }
 
@@ -149,8 +158,14 @@ resource "helm_release" "velero" {
     value = module.velero_irsa.iam_role_arn
   }
 
+  set {
+    name  = "logLevel"
+    value = "debug"
+  }
+
   depends_on = [
-    module.velero_irsa,
-    kubernetes_namespace.velero
+    null_resource.velero_crds,
+    kubernetes_namespace.velero,
+    module.velero_irsa
   ]
 }

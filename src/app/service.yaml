@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: time-printer-app-service
+  namespace: time-printer  # Update the namespace here
+spec:
+  selector:
+    app: time-printer-app  # Match the label used in the Deployment
+  ports:
+    - protocol: TCP
+      port: 80  # Port exposed to the outside world
+      targetPort: 5000  # Port the container listens on
+  type: ClusterIP  # Internal access; change to LoadBalancer if needed for external access

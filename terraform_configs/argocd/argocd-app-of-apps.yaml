@@ -4,14 +4,15 @@ metadata:
   name: app-of-apps
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/isirajieinnocent/gitops-argocd-deployment.git
-    path: terraform_configs/argocd/apps
-    targetRevision: main
   destination:
-    server: https://kubernetes.default.svc
+    name: ''
     namespace: argocd
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/isirajieinnocent/gitops-argocd-deployment.git # The repo that contains your child application
+    targetRevision: HEAD
+    path: path src/app
+  project: default
   syncPolicy:
     automated:
       prune: true

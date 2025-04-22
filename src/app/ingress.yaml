@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: time-printer-app-ingress
+  namespace: time-printer  # Update the namespace here
+spec:
+  rules:
+  - host: time-printer.example.com  # Your domain here
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: time-printer-app-service
+            port:
+              number: 80
