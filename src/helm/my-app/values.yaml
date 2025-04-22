@@ -1,7 +1,7 @@
 replicaCount: 3
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: f8be213a3894c5d68eadb1cd37b7a6ef5b57e966
+  tag: d8ec42d1b44d0de19812a11a65a28a1294a0d698
   pullPolicy: IfNotPresent
 securityContext:
   runAsNonRoot: true
