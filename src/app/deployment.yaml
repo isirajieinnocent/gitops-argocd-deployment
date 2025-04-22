@@ -1,30 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: time-printer-app
-  namespace: time-printer  # Update the namespace here
+  name: release-name
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
-      app: time-printer-app  # Label selector for the pods
+      app: release-name
   template:
     metadata:
       labels:
-        app: time-printer-app  # Label for the pod
+        app: release-name
     spec:
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: time-printer-app
-          image: myorg/time-printer-app:latest  # Replace with your image
+        - name: app
+          image: "ghcr.io/isirajieinnocent/time-printer:latest"
           ports:
-            - containerPort: 5000  # Expose the correct port
-          resources:
-            requests:
-              memory: "512Mi"  # Minimum resources
-              cpu: "250m"  # Minimum CPU allocation
-            limits:
-              memory: "1Gi"  # Max resources
-              cpu: "500m"  # Max CPU
-          env:
-            - name: ENVIRONMENT
-              value: "production"  # Example environment variable
+            - containerPort: 8080

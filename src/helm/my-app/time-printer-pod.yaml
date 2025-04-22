@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: time-printer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: time-printer
+  template:
+    metadata:
+      labels:
+        app: time-printer
+    spec:
+      tolerations:
+      - key: "spot-instance"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      containers:
+      - name: time-printer
+        image: your-image
+        # other container configurations

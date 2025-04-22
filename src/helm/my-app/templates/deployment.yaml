@@ -1,20 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: release-name
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 3
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      app: release-name
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
+        app: release-name
     spec:
-      securityContext: {{ .Values.securityContext }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-      - name: app
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        ports:
-        - containerPort: 8080
+        - name: app
+          image: "ghcr.io/isirajieinnocent/time-printer:latest"
+          ports:
+            - containerPort: 8080
