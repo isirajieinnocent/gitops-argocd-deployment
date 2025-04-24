@@ -3,7 +3,6 @@ variable "cluster_name" {
   type        = string
 }
 
-
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
   type        = string
@@ -25,9 +24,3 @@ variable "region" {
   type        = string
   default     = "us-east-1"
 }
-
-
-
-
-
-

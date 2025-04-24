@@ -24,14 +24,7 @@ module "eks" {
         workload-type = "spot"
       }
 
-      # Corrected taints (list of maps)
-      taints = [
-        {
-          key    = "spot-instance"
-          value  = "true"
-          effect = "NO_SCHEDULE"
-        }
-      ]
+      # Taints removed
     }
   }
 
