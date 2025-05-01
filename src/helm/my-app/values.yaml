@@ -1,26 +1,21 @@
 replicaCount: 3
-
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: dd09091cbb04cf8b726b1156b20ec9a6f5ddfa41  # This gets updated to the Git SHA by GitHub Actions
+  tag: f4e089c3d909a2abf3b3a2f688bc750def9609c6 # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
-
 podImage: "your-image"
 spotInstanceTolerationKey: "spot-instance"
-
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
   fsGroup: 2000
   seccompProfile:
     type: RuntimeDefault
-
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-
 server:
   service:
     type: ClusterIP
@@ -31,16 +26,14 @@ server:
       - name: https
         port: 443
         targetPort: 8080
-  
   extraArgs:
-    - --insecure  # Remove this in production
+    - --insecure # Remove this in production
     # - --secure   # Uncomment for production
-
-  # TLS configuration (uncomment for production)
-  # config:
-  #   tls.crt: |
-  #     -----BEGIN CERTIFICATE-----
-  #     ...
-  #   tls.key: |
-  #     -----BEGIN PRIVATE KEY-----
-  #     ...
+# TLS configuration (uncomment for production)
+# config:
+#   tls.crt: |
+#     -----BEGIN CERTIFICATE-----
+#     ...
+#   tls.key: |
+#     -----BEGIN PRIVATE KEY-----
+#     ...
