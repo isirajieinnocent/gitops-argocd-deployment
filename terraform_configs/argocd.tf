@@ -17,26 +17,8 @@ resource "helm_release" "argocd" {
     <<-EOF
       server:
         service:
-          type: LoadBalancer
-          ports:
-            - port: 443
-              targetPort: 443
-              name: https
-        ingress:
-          enabled: true
-          hosts:
-            - argocd.example.com
-          tls:
-            - secretName: argocd-tls
-              hosts:
-                - argocd.example.com
-    EOF
-  ]
+          type: clusterIP
+          EOF
 
-  timeout = 600 # Increased to 10 minutes for more time to provision
-
-  depends_on = [
-    module.eks,
-    kubernetes_namespace.argocd  # Ensure the namespace is created before the Helm release
-  ]
+    ]
 }

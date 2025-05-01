@@ -9,14 +9,11 @@ spec:
     namespace: my-python-app # Namespace where the app will be deployed
     server: https://kubernetes.default.svc
   source:
-    repoURL: https://github.com/my-org/my-python-app-repo.git  # Repo where the app manifests are located
-    targetRevision: HEAD  # Target revision (branch, tag, or commit)
-    path: src/app # Path where your Kubernetes manifests for this app are stored
-  project: default
+    repoURL: "https://github.com/isirajieinnocent/gitops-argocd-deployment" 
+    targetRevision: HEAD  
+    path: src/app
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-  # Optional: If you want this app to be part of the App-of-Apps structure, you can add the following annotation
-  annotations:
-    argocd.argoproj.io/instance: time-printer # Reference to the App-of-Apps instance (if you want to associate this app with a parent app)
+  

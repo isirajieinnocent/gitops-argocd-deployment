@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-server
+  namespace: monitoring  # Ensure this matches the namespace where Prometheus is deployed
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi  # Ensure this matches the PV size
+  storageClassName: gp2  # Ensure this matches the PV storage class

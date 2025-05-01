@@ -8,7 +8,7 @@ prometheusOperator:
 prometheus:
   enabled: true
   service:
-    type: LoadBalancer
+    type: clusterIP
   retention: 15d
   resources:
     limits:
@@ -52,3 +52,18 @@ additionalScrapeConfigs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ['my-app.default.svc.cluster.local:8080']
+
+      cat <<EOF > values.yaml
+server:
+  service:
+    type: ClusterIP
+    ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 8080
+  extraArgs:
+  - --insecure
+EOF
