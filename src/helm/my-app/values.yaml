@@ -1,7 +1,7 @@
 replicaCount: 3
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: bed814fdd26c22c0fa20a48222c00f65b3942a17 # This gets updated to the Git SHA by GitHub Actions
+  tag: f9fddcf84a77c958f02d4e4b8cd62bda926d3d20 # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
 podImage: "your-image"
 spotInstanceTolerationKey: "spot-instance"
