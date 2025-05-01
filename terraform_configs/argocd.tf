@@ -1,9 +1,9 @@
 resource "helm_release" "argocd" {
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  namespace  = "argocd"
-  version    = "5.51.6"
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argocd"
+  version          = "5.51.6"
   create_namespace = true
 
   values = [
@@ -11,6 +11,12 @@ resource "helm_release" "argocd" {
       server:
         service:
           type: LoadBalancer
+        extraArgs:
+          - --insecure
+          - --enable-gzip
     EOF
   ]
+
+  timeout = 600
+  wait    = true
 }
