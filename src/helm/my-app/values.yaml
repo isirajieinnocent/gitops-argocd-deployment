@@ -1,24 +1,21 @@
 replicaCount: 3
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: b1c1acee4a9336bf09927e945768ac4ea1180ee7 # This gets updated to the Git SHA by GitHub Actions
+  tag: 6375caf74ca080417735223cba30cad51ab917cd # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
 podImage: "your-image"
 spotInstanceTolerationKey: "spot-instance"
-
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
   fsGroup: 2000
   seccompProfile:
     type: RuntimeDefault
-
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-
 server:
   service:
     type: ClusterIP
@@ -28,19 +25,16 @@ server:
         targetPort: 8080
       - name: https
         port: 443
-        targetPort: 8443  # Standard HTTPS port
-
+        targetPort: 8443 # Standard HTTPS port
   # TLS Configuration
   extraArgs:
     - --tls-cert-file=/etc/argocd/tls/tls.crt
     - --tls-key-file=/etc/argocd/tls/tls.key
     # Remove --insecure if present
-
   extraVolumeMounts:
     - name: argocd-server-tls
       mountPath: /etc/argocd/tls
       readOnly: true
-
   extraVolumes:
     - name: argocd-server-tls
       secret:
@@ -50,4 +44,4 @@ server:
             path: tls.crt
           - key: tls.key
             path: tls.key
-        defaultMode: 0400  # Read-only permissions
+        defaultMode: 0400 # Read-only permissions
