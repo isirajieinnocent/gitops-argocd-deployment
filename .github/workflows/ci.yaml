@@ -1,4 +1,4 @@
-name: CI/CD for Helm + ArgoCD App-of-Apps
+name: CI/CD Pipeline for Helm + ArgoCD App-of-Apps
 
 on:
   push:
@@ -6,20 +6,28 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  IMAGE_NAME: time-printer
+  HELM_CHART_PATH: src/helm/my-app
+
 permissions:
   contents: write
   security-events: write
 
 jobs:
-  build:
+  build-and-push:
+    name: Build and Push Container Image
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
+      - name: Cache Docker Layers
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
@@ -27,104 +35,164 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Login to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | \
+          docker login ghcr.io \
+            -u ${{ secrets.GHCR_USERNAME }} \
+            --password-stdin
 
-      - name: Build and push image
+      - name: Build and Push Image
         uses: docker/build-push-action@v4
         with:
           context: ./src/app
           push: true
           tags: |
-            ghcr.io/${{ secrets.GHCR_USERNAME }}/time-printer:latest
-            ghcr.io/${{ secrets.GHCR_USERNAME }}/time-printer:${{ github.sha }}
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
           sbom: true
           provenance: true
 
-      - name: Move new cache
+      - name: Update Build Cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-  update-helm-values:
+  update-helm-chart:
+    name: Update Helm Chart
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-and-push
     steps:
-      - name: Clone Helm repo and configure Git
+      - name: Checkout Helm Repository
+        uses: actions/checkout@v3
+        with:
+          repository: isirajieinnocent/gitops-argocd-deployment
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: helm-repo
+
+      - name: Update Image Tag in values.yaml
         run: |
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/isirajieinnocent/gitops-argocd-deployment.git helm-repo
           cd helm-repo
+          yq eval -i ".image.tag = \"${{ github.sha }}\"" ${{ env.HELM_CHART_PATH }}/values.yaml
+          
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-
-      - name: Update image tag in values.yaml
-        run: |
-          cd helm-repo
-          yq e '.image.tag = "${{ github.sha }}"' -i src/helm/my-app/values.yaml
-          git add src/helm/my-app/values.yaml
-          git commit -m "Update image tag to ${{ github.sha }}"
-          git push
+          
+          git add ${{ env.HELM_CHART_PATH }}/values.yaml
+          git commit -m "CI: Update image tag to ${{ github.sha }} [skip ci]"
+          
+          # Retry logic for push
+          for i in {1..3}; do
+            if git push; then
+              break
+            fi
+            sleep 5
+            git pull --rebase
+          done
 
   sync-argocd:
+    name: Sync ArgoCD Application
     runs-on: ubuntu-latest
-    needs: update-helm-values
+    needs: update-helm-chart
     steps:
       - name: Install ArgoCD CLI
         run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          curl -sSL -o argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
           chmod +x argocd
           sudo mv argocd /usr/local/bin/
 
-      - name: Login and sync ArgoCD
+      - name: Verify ArgoCD Server Connectivity
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+        run: |
+          SERVER_HOST=$(echo "$ARGOCD_SERVER" | cut -d: -f1)
+          SERVER_PORT=$(echo "$ARGOCD_SERVER" | cut -d: -f2)
+          
+          echo "Waiting for ArgoCD server at $SERVER_HOST:$SERVER_PORT..."
+          timeout 60 bash -c 'until nc -z $SERVER_HOST $SERVER_PORT; do sleep 2; done'
+
+      - name: Authenticate with ArgoCD
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
           ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
           ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
         run: |
-          argocd login "$ARGOCD_SERVER" \
-            --username "$ARGOCD_USERNAME" \
-            --password "$ARGOCD_PASSWORD" \
-            --insecure --grpc-web
+          for attempt in {1..5}; do
+            if argocd login "$ARGOCD_SERVER" \
+              --username "$ARGOCD_USERNAME" \
+              --password "$ARGOCD_PASSWORD" \
+              --insecure \
+              --grpc-web; then
+              echo "Login successful"
+              break
+            fi
+            echo "Attempt $attempt failed, retrying in 5 seconds..."
+            sleep 5
+          done
+          
+          argocd account get-user-info
 
-          argocd app sync time-printer
-          argocd app wait time-printer --health --timeout 300
+      - name: Sync Application
+        run: |
+          argocd app sync ${{ env.IMAGE_NAME }} \
+            --timeout 300 \
+            --prune \
+            --force
+          
+          argocd app wait ${{ env.IMAGE_NAME }} \
+            --health \
+            --timeout 600
 
-  security:
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-and-push
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | \
+          docker login ghcr.io \
+            -u ${{ secrets.GHCR_USERNAME }} \
+            --password-stdin
 
-      - uses: aquasecurity/trivy-action@master
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "ghcr.io/${{ secrets.GHCR_USERNAME }}/time-printer:${{ github.sha }}"
-          format: "sarif"
-          output: "trivy-results.sarif"
+          image-ref: ghcr.io/${{ secrets.GHCR_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
           ignore-unfixed: true
           severity: HIGH,CRITICAL
+          exit-code: 0
 
-      - name: Upload SARIF
+      - name: Upload Security Results
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: trivy-results.sarif
 
   notify:
+    name: Send Notification
     runs-on: ubuntu-latest
     needs: sync-argocd
+    if: always()
     steps:
-      - name: Notify Slack
+      - name: Send Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: good
-          SLACK_TITLE: "Helm App Deployed"
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: "Deployment ${{ job.status }} - ${{ env.IMAGE_NAME }}"
           SLACK_MESSAGE: |
-            *App:* time-printer  
-            *Tag:* `${{ github.sha }}`  
-            *Chart Repo:* `${{ secrets.HELM_REPO }}`  
-            *Synced via:* ArgoCD App-of-Apps
+            *Status:* ${{ job.status }}
+            *Commit:* `${{ github.sha }}`
+            *Environment:* Production
+            *ArgoCD App:* ${{ env.IMAGE_NAME }}
+            *Build Logs:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_USERNAME: GitHub Actions
+          SLACK_ICON_EMOJI: rocket
