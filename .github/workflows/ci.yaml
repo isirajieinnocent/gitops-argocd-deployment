@@ -9,6 +9,7 @@ on:
 env:
   IMAGE_NAME: time-printer
   HELM_CHART_PATH: src/helm/my-app
+  ARGOCD_APP_NAME: my-app  # Added explicit ArgoCD app name
 
 permissions:
   contents: write
@@ -71,25 +72,26 @@ jobs:
           repository: isirajieinnocent/gitops-argocd-deployment
           token: ${{ secrets.GITHUB_TOKEN }}
           path: helm-repo
+          fetch-depth: 0  # Needed for proper git history
 
       - name: Update Image Tag in values.yaml
         run: |
           cd helm-repo
-          yq eval -i ".image.tag = \"${{ github.sha }}\"" ${{ env.HELM_CHART_PATH }}/values.yaml
+          yq eval -i ".image.tag = \"${{ needs.build-and-push.outputs.image_tag }}\"" ${{ env.HELM_CHART_PATH }}/values.yaml
           
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           
           git add ${{ env.HELM_CHART_PATH }}/values.yaml
-          git commit -m "CI: Update image tag to ${{ github.sha }} [skip ci]"
+          git commit -m "CI: Update image tag to ${{ needs.build-and-push.outputs.image_tag }} [skip ci]"
           
           # Retry logic for push
           for i in {1..3}; do
-            if git push; then
+            if git push origin main; then
               break
             fi
             sleep 5
-            git pull --rebase
+            git pull --rebase origin main
           done
 
   sync-argocd:
@@ -112,7 +114,12 @@ jobs:
           SERVER_PORT=$(echo "$ARGOCD_SERVER" | cut -d: -f2)
           
           echo "Waiting for ArgoCD server at $SERVER_HOST:$SERVER_PORT..."
-          timeout 60 bash -c 'until nc -z $SERVER_HOST $SERVER_PORT; do sleep 2; done'
+          timeout 60 bash -c '
+            until nc -z -w 2 "$SERVER_HOST" "$SERVER_PORT"; do 
+              echo "Waiting for ArgoCD server..."
+              sleep 2
+            done
+          '
 
       - name: Authenticate with ArgoCD
         env:
@@ -126,25 +133,30 @@ jobs:
               --password "$ARGOCD_PASSWORD" \
               --insecure \
               --grpc-web; then
-              echo "Login successful"
+              echo "✅ Login successful"
               break
             fi
-            echo "Attempt $attempt failed, retrying in 5 seconds..."
+            echo "⚠️ Attempt $attempt failed, retrying in 5 seconds..."
             sleep 5
+            if [ $attempt -eq 5 ]; then
+              echo "❌ Failed to login after 5 attempts"
+              exit 1
+            fi
           done
           
           argocd account get-user-info
 
       - name: Sync Application
         run: |
-          argocd app sync ${{ env.IMAGE_NAME }} \
+          argocd app sync ${{ env.ARGOCD_APP_NAME }} \
             --timeout 300 \
             --prune \
             --force
           
-          argocd app wait ${{ env.IMAGE_NAME }} \
+          argocd app wait ${{ env.ARGOCD_APP_NAME }} \
             --health \
-            --timeout 600
+            --timeout 600 \
+            --sync
 
   security-scan:
     name: Security Scan
@@ -179,7 +191,7 @@ jobs:
   notify:
     name: Send Notification
     runs-on: ubuntu-latest
-    needs: sync-argocd
+    needs: [sync-argocd, security-scan]
     if: always()
     steps:
       - name: Send Slack Notification
@@ -192,7 +204,7 @@ jobs:
             *Status:* ${{ job.status }}
             *Commit:* `${{ github.sha }}`
             *Environment:* Production
-            *ArgoCD App:* ${{ env.IMAGE_NAME }}
+            *ArgoCD App:* ${{ env.ARGOCD_APP_NAME }}
             *Build Logs:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SLACK_USERNAME: GitHub Actions
           SLACK_ICON_EMOJI: rocket
