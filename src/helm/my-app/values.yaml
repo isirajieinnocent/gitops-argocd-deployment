@@ -2,7 +2,7 @@
 replicaCount: 3
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: f2ff37a1d5f82f353552d4b6ba24bcc2c77e4733 # This gets updated to the Git SHA by GitHub Actions
+  tag: d9129f12df9f71def658159fd84f9cde638a782f # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
   imagePullSecrets:
     - name: ghcr-creds # Add if pulling from private registry
