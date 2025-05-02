@@ -1,22 +1,18 @@
 # Application Configuration
 replicaCount: 3
-
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-  tag: 6375caf74ca080417735223cba30cad51ab917cd # This gets updated to the Git SHA by GitHub Actions
+  tag: f2ff37a1d5f82f353552d4b6ba24bcc2c77e4733 # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
   imagePullSecrets:
-    - name: ghcr-creds  # Add if pulling from private registry
-
+    - name: ghcr-creds # Add if pulling from private registry
 podImage: "your-image"
-
 # Spot Instance Configuration
 spotInstanceTolerationKey: "spot-instance"
 tolerations:
   - key: "spot-instance"
     operator: "Exists"
     effect: "NoSchedule"
-
 # Security Hardening
 securityContext:
   runAsNonRoot: true
@@ -28,7 +24,6 @@ securityContext:
     drop: ["ALL"]
   readOnlyRootFilesystem: true
   allowPrivilegeEscalation: false
-
 # Resource Management
 resources:
   requests:
@@ -37,7 +32,6 @@ resources:
   limits:
     cpu: "500m"
     memory: "512Mi"
-
 # Autoscaling Configuration
 autoscaling:
   enabled: true
@@ -45,7 +39,6 @@ autoscaling:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
-
 # Server Configuration
 server:
   service:
@@ -59,13 +52,11 @@ server:
         port: 443
         targetPort: 8443
         protocol: TCP
-
   # TLS Configuration
   extraArgs:
     - --tls-cert-file=/etc/argocd/tls/tls.crt
     - --tls-key-file=/etc/argocd/tls/tls.key
     - --insecure=false
-
   extraVolumeMounts:
     - name: argocd-server-tls
       mountPath: /etc/argocd/tls/tls.crt
@@ -75,7 +66,6 @@ server:
       mountPath: /etc/argocd/tls/tls.key
       readOnly: true
       subPath: tls.key
-
   extraVolumes:
     - name: argocd-server-tls
       secret:
