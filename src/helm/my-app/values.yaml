@@ -3,6 +3,7 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
+<<<<<<< HEAD
   tag: b1c1acee4a9336bf09927e945768ac4ea1180ee7 # Auto-updated by CI/CD
   pullPolicy: IfNotPresent
   imagePullSecrets:
@@ -18,12 +19,19 @@ tolerations:
     effect: "NoSchedule"
 
 # Security Hardening
+=======
+  tag: 6375caf74ca080417735223cba30cad51ab917cd # This gets updated to the Git SHA by GitHub Actions
+  pullPolicy: IfNotPresent
+podImage: "your-image"
+spotInstanceTolerationKey: "spot-instance"
+>>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
   fsGroup: 2000
   seccompProfile:
     type: RuntimeDefault
+<<<<<<< HEAD
   capabilities:
     drop: ["ALL"]
   readOnlyRootFilesystem: true
@@ -39,11 +47,14 @@ resources:
     memory: "512Mi"
 
 # Autoscaling Configuration
+=======
+>>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
+<<<<<<< HEAD
   targetMemoryUtilizationPercentage: 80  # Added memory metric
 
 # Service Configuration
@@ -76,16 +87,36 @@ server:
     - --tls-key-file=/etc/argocd/tls/tls.key
     - --insecure=false  # Force TLS
 
+=======
+server:
+  service:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 80
+        targetPort: 8080
+      - name: https
+        port: 443
+        targetPort: 8443 # Standard HTTPS port
+  # TLS Configuration
+  extraArgs:
+    - --tls-cert-file=/etc/argocd/tls/tls.crt
+    - --tls-key-file=/etc/argocd/tls/tls.key
+    # Remove --insecure if present
+>>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
   extraVolumeMounts:
     - name: argocd-server-tls
       mountPath: /etc/argocd/tls
       readOnly: true
+<<<<<<< HEAD
       subPath: tls.crt  # More secure mounting
     - name: argocd-server-tls
       mountPath: /etc/argocd/tls
       readOnly: true
       subPath: tls.key
 
+=======
+>>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
   extraVolumes:
     - name: argocd-server-tls
       secret:
@@ -96,6 +127,7 @@ server:
             path: tls.crt
           - key: tls.key
             path: tls.key
+<<<<<<< HEAD
 
 # Monitoring Configuration (Optional)
 metrics:
@@ -114,3 +146,6 @@ networkPolicy:
       ports:
         - port: 8443
           protocol: TCP
+=======
+        defaultMode: 0400 # Read-only permissions
+>>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
