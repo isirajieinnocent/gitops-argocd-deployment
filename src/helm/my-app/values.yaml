@@ -3,13 +3,12 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/isirajieinnocent/time-printer
-<<<<<<< HEAD
-  tag: b1c1acee4a9336bf09927e945768ac4ea1180ee7 # Auto-updated by CI/CD
+  tag: 6375caf74ca080417735223cba30cad51ab917cd # This gets updated to the Git SHA by GitHub Actions
   pullPolicy: IfNotPresent
   imagePullSecrets:
     - name: ghcr-creds  # Add if pulling from private registry
 
-podImage: "your-image"  # Consider using full image reference if different from above
+podImage: "your-image"
 
 # Spot Instance Configuration
 spotInstanceTolerationKey: "spot-instance"
@@ -19,19 +18,12 @@ tolerations:
     effect: "NoSchedule"
 
 # Security Hardening
-=======
-  tag: 6375caf74ca080417735223cba30cad51ab917cd # This gets updated to the Git SHA by GitHub Actions
-  pullPolicy: IfNotPresent
-podImage: "your-image"
-spotInstanceTolerationKey: "spot-instance"
->>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
   fsGroup: 2000
   seccompProfile:
     type: RuntimeDefault
-<<<<<<< HEAD
   capabilities:
     drop: ["ALL"]
   readOnlyRootFilesystem: true
@@ -47,47 +39,14 @@ resources:
     memory: "512Mi"
 
 # Autoscaling Configuration
-=======
->>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-<<<<<<< HEAD
-  targetMemoryUtilizationPercentage: 80  # Added memory metric
-
-# Service Configuration
-service:
-  type: ClusterIP
-  ports:
-    - name: http
-      port: 80
-      targetPort: 8080
-      protocol: TCP
-    - name: https
-      port: 443
-      targetPort: 8443
-      protocol: TCP
-  annotations: {}
-  labels: {}
-
-# TLS Configuration (Production Ready)
-tls:
-  enabled: true
-  secretName: argocd-server-tls
-  certFile: /etc/argocd/tls/tls.crt
-  keyFile: /etc/argocd/tls/tls.key
-  caFile: /etc/argocd/tls/ca.crt  # Optional for mutual TLS
+  targetMemoryUtilizationPercentage: 80
 
 # Server Configuration
-server:
-  extraArgs:
-    - --tls-cert-file=/etc/argocd/tls/tls.crt
-    - --tls-key-file=/etc/argocd/tls/tls.key
-    - --insecure=false  # Force TLS
-
-=======
 server:
   service:
     type: ClusterIP
@@ -95,57 +54,30 @@ server:
       - name: http
         port: 80
         targetPort: 8080
+        protocol: TCP
       - name: https
         port: 443
-        targetPort: 8443 # Standard HTTPS port
+        targetPort: 8443
+        protocol: TCP
+
   # TLS Configuration
   extraArgs:
     - --tls-cert-file=/etc/argocd/tls/tls.crt
     - --tls-key-file=/etc/argocd/tls/tls.key
-    # Remove --insecure if present
->>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
+    - --insecure=false
+
   extraVolumeMounts:
     - name: argocd-server-tls
-      mountPath: /etc/argocd/tls
+      mountPath: /etc/argocd/tls/tls.crt
       readOnly: true
-<<<<<<< HEAD
-      subPath: tls.crt  # More secure mounting
+      subPath: tls.crt
     - name: argocd-server-tls
-      mountPath: /etc/argocd/tls
+      mountPath: /etc/argocd/tls/tls.key
       readOnly: true
       subPath: tls.key
 
-=======
->>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
   extraVolumes:
     - name: argocd-server-tls
       secret:
         secretName: argocd-server-tls
         defaultMode: 0400
-        items:
-          - key: tls.crt
-            path: tls.crt
-          - key: tls.key
-            path: tls.key
-<<<<<<< HEAD
-
-# Monitoring Configuration (Optional)
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: true
-    interval: 30s
-    scrapeTimeout: 10s
-
-# Network Policies
-networkPolicy:
-  enabled: true
-  ingress:
-    - from:
-        - podSelector: {}
-      ports:
-        - port: 8443
-          protocol: TCP
-=======
-        defaultMode: 0400 # Read-only permissions
->>>>>>> e5bc1c10c2cd484c95b98cb28da18ed3d4fee2ee
