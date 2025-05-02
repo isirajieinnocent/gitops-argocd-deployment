@@ -21,7 +21,7 @@ autoscaling:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 
-server:
+sserver:
   service:
     type: ClusterIP
     ports:
@@ -30,15 +30,26 @@ server:
         targetPort: 8080
       - name: https
         port: 443
-        targetPort: 8080
+        targetPort: 8443  # Standard HTTPS port
+
+  # TLS Configuration
   extraArgs:
-    - --tls-cert-file=/etc/argocd/tls/argocd-server.crt
-    - --tls-key-file=/etc/argocd/tls/argocd-server.key
+    - --tls-cert-file=/etc/argocd/tls/tls.crt
+    - --tls-key-file=/etc/argocd/tls/tls.key
+    # Remove --insecure if present
+
   extraVolumeMounts:
     - name: argocd-server-tls
       mountPath: /etc/argocd/tls
       readOnly: true
+
   extraVolumes:
     - name: argocd-server-tls
       secret:
         secretName: argocd-server-tls
+        items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+        defaultMode: 0400  # Read-only permissions
